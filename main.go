@@ -5,7 +5,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func main() {
@@ -32,12 +31,9 @@ func main() {
 	}
 	// User whitelist
 	admins := [6]tgbotapi.User{
-		{UserName: "stellarscreech"},
-		//{UserName: "PartyIsLife"},
-		//{UserName: "stellarscreech"},
-		//{UserName: "stellarscreech"},
-		//{UserName: "stellarscreech"},
-
+		{ID: 557161506}, // stellarscreech
+		{ID: 842719267}, // partyislife
+		//{ID: }, // ___
 	}
 
 	// Process incoming messages.
@@ -49,7 +45,7 @@ func main() {
 		// Check if the sender is whitelisted.
 		isWhitelisted := false
 		for _, admin := range admins {
-			if update.Message.From.UserName == admin.UserName {
+			if update.Message.From.ID == admin.ID {
 				isWhitelisted = true
 				break
 			}
@@ -64,6 +60,7 @@ func main() {
 			// wl - Check if the sender is whitelisted
 			if strings.HasPrefix(m.Text, prefix+"wl") {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "true")
+
 				_, err := bot.Send(msg)
 				if err != nil {
 					log.Printf("Error sending message: %v", err)
@@ -74,9 +71,9 @@ func main() {
 			if strings.HasPrefix(m.Text, prefix+"mute") {
 				// Split the message into parts: command, user, length, and reason
 				parts := strings.Fields(m.Text)
-				if len(parts) < 4 {
+				if len(parts) < 3 {
 					// Invalid command format
-					msg := tgbotapi.NewMessage(m.Chat.ID, "Invalid command format. Use: "+prefix+"mute [user] [length] [reason]")
+					msg := tgbotapi.NewMessage(m.Chat.ID, "Invalid command format. Use: "+prefix+"mute [length] [reason] and reply to your target.")
 					_, err := bot.Send(msg)
 					if err != nil {
 						log.Printf("Error sending message: %v", err)
@@ -84,11 +81,10 @@ func main() {
 					continue
 				}
 
-				userToMute := parts[1]
-				muteLength := parts[2]
-				muteReason := strings.Join(parts[3:], " ")
+				userToMute := m.ReplyToMessage.From.UserName
+				muteLength := parts[1]
+				muteReason := strings.Join(parts[2:], " ")
 				// Calculate mute duration based on muteLength
-				length, err := strconv.Atoi(muteLength)
 				if err != nil {
 					msg := tgbotapi.NewMessage(m.Chat.ID, "Invalid duration format. Please specify a valid duration or 'forever'.")
 					_, err := bot.Send(msg)
@@ -97,8 +93,8 @@ func main() {
 					}
 					continue
 				}
-				// Convert duration to seconds
-				muteDuration := time.Duration(length) * time.Second
+				// Convert
+				muteDuration, _ := strconv.Atoi(muteLength)
 
 				// Logic
 				boolval := new(bool)
@@ -106,12 +102,11 @@ func main() {
 
 				restrictMemberCfg := tgbotapi.RestrictChatMemberConfig{
 					ChatMemberConfig: tgbotapi.ChatMemberConfig{
-						ChatID:             update.Message.Chat.ID,
-						UserID: , // ID of the user to be muted
-						//TODO: Resolve Bad Request: invalid user_id specified
+						ChatID: update.Message.Chat.ID,
+						UserID: m.ReplyToMessage.From.ID,
 					},
-					CanSendMessages: boolval,                             // Prevent the user from sending messages
-					UntilDate:       time.Now().Add(muteDuration).Unix(), // Mute duration
+					CanSendMessages: boolval,             // Prevent the user from sending messages
+					UntilDate:       int64(muteDuration), // Mute duration
 				}
 				_, err = bot.RestrictChatMember(restrictMemberCfg)
 				if err != nil {
@@ -127,6 +122,49 @@ func main() {
 					log.Printf("Error sending message: %v", err)
 				}
 			}
+
+			// unmute [user]
+			if strings.HasPrefix(m.Text, prefix+"unmute") {
+				parts := strings.Fields(m.Text)
+				if len(parts) < 3 {
+					// Invalid command format
+					msg := tgbotapi.NewMessage(m.Chat.ID, "Invalid command format.")
+					_, err := bot.Send(msg)
+					if err != nil {
+						log.Printf("Error sending message: %v", err)
+					}
+					continue
+				}
+
+				userToMute := m.ReplyToMessage.From.UserName
+
+				// Logic
+				boolval := new(bool)
+				*boolval = true
+
+				restrictMemberCfg := tgbotapi.RestrictChatMemberConfig{
+					ChatMemberConfig: tgbotapi.ChatMemberConfig{
+						ChatID: update.Message.Chat.ID,
+						UserID: m.ReplyToMessage.From.ID,
+					},
+					CanSendMessages: boolval, // Make the member be able to send msgs.
+				}
+
+				_, err = bot.RestrictChatMember(restrictMemberCfg)
+				if err != nil {
+					log.Printf("Error unmuting user: %v", err)
+					continue
+				}
+
+				// Indicate that the user was unmuted.
+				muteMessage := "User @" + userToMute + " has been unmuted."
+				msg := tgbotapi.NewMessage(m.Chat.ID, muteMessage)
+				_, err = bot.Send(msg)
+				if err != nil {
+					log.Printf("Error sending message: %v", err)
+				}
+			}
+
 		}
 	}
 }
