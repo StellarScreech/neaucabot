@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	//"database/sql"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
@@ -8,26 +9,25 @@ import (
 	"strings"
 )
 
-//func openDatabase() *sql.DB {
-//	db, err := sql.Open("sqlite3", "./identifier.splite")
-//	if err != nil {
-//		log.Panic(err)
-//	}
-//
-//	_, err = db.Exec("CREATE TABLE IF NOT EXISTS events (" +
-//		"id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
-//		"user INTEGER, " +
-//		"name TEXT, " +
-//		"date INTEGER);")
-//
-//	if err != nil {
-//		log.Panic(err)
-//	}
-//
-//	return db
-//
-//}
-//
+func openDatabase() *sql.DB {
+	db, err := sql.Open("postgres", "host=localhost user=postgres password=your-password dbname=your-db-name sslmode=disable")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS events (" +
+		"id SERIAL PRIMARY KEY, " +
+		"user INTEGER, " +
+		"name TEXT, " +
+		"date INTEGER);")
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return db
+}
+
 //func store(message *tgbotapi.Message, db *sql.DB) {
 //	_, err := db.Exec("INSERT INTO events (user, name, date) VALUES ($1, $2, $3);",
 //		message.From.ID,
