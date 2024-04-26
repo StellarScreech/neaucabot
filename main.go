@@ -1,18 +1,53 @@
 package main
 
 import (
+	//"database/sql"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"strconv"
 	"strings"
 )
 
+//func openDatabase() *sql.DB {
+//	db, err := sql.Open("sqlite3", "./identifier.splite")
+//	if err != nil {
+//		log.Panic(err)
+//	}
+//
+//	_, err = db.Exec("CREATE TABLE IF NOT EXISTS events (" +
+//		"id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+//		"user INTEGER, " +
+//		"name TEXT, " +
+//		"date INTEGER);")
+//
+//	if err != nil {
+//		log.Panic(err)
+//	}
+//
+//	return db
+//
+//}
+//
+//func store(message *tgbotapi.Message, db *sql.DB) {
+//	_, err := db.Exec("INSERT INTO events (user, name, date) VALUES ($1, $2, $3);",
+//		message.From.ID,
+//		message.Text,
+//		message.Date)
+//	if err != nil {
+//		log.Panic(err)
+//	}
+//
+//}
+
 func main() {
-	// Replace "YOUR_TELEGRAM_BOT_TOKEN" with the API token provided by the BotFather.
 	bot, err := tgbotapi.NewBotAPI("6733181321:AAF0U6SalFQtN5rQwb1Eb6sGeuOmxP3SRbM")
 	if err != nil {
 		log.Fatalf("Error creating bot: %v", err)
 	}
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+	// Open the database.
+	//db := openDatabase()
+	//defer db.Close()
 
 	// Bot Settings
 	prefix := "-"
@@ -33,6 +68,7 @@ func main() {
 	admins := [6]tgbotapi.User{
 		{ID: 557161506}, // stellarscreech
 		{ID: 842719267}, // partyislife
+		{ID: 564654102}, // masalbekov
 		//{ID: }, // ___
 	}
 
@@ -41,7 +77,8 @@ func main() {
 		if update.Message == nil { // Ignore any non-Message updates.
 			continue
 		}
-
+		// Store the message in the database.
+		//store(update.Message, db)
 		// Check if the sender is whitelisted.
 		isWhitelisted := false
 		for _, admin := range admins {
@@ -51,8 +88,10 @@ func main() {
 			}
 		}
 
-		// Print received message text and sender username.
+		// Print received message text and sender username. and id
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+		// Print the sender's ID.
+		log.Printf("Sender ID: %d", update.Message.From.ID)
 		if isWhitelisted {
 			m := update.Message
 			//----------------Commands---------------//
